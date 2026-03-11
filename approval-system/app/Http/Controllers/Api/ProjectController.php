@@ -70,6 +70,32 @@ class ProjectController extends Controller
         ]);
     }
 
+    public function showAuditLogs(Request $request, Project $project): JsonResponse
+    {
+        $user = $request->user();
+
+        // Users can only view their own projects
+        if ($user->isUser() && $project->user_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $auditLogs = $project->auditLogs()->with('user')->latest()->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $auditLogs->map(fn($log) => [
+                'id'         => $log->id,
+                'action'     => $log->action,
+                'message'    => $log->message,
+                'created_at' => $log->created_at->toIso8601String(),
+                'user'       => [
+                    'id'   => $log->user->id,
+                    'name' => $log->user->name,
+                ],
+            ]), 
+        ]);
+    }
+
     /**
      * POST /api/projects
      * Submit a new project.
