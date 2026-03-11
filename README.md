@@ -1,6 +1,6 @@
 # Project Approval Workflow System
 
-A full-stack **Laravel 10 + React** application for submitting and managing project approvals with role-based access control, email notifications, and MySQL stored procedures.
+A full-stack **Laravel 12 + React** application for submitting and managing project approvals with role-based access control, email notifications, and MySQL stored procedures.
 
 ---
 
@@ -8,11 +8,11 @@ A full-stack **Laravel 10 + React** application for submitting and managing proj
 
 ```
 project-approval-system/
-├── backend/          ← Laravel 10 API
+├── backend/          ← Laravel 12 API
 │   ├── app/
 │   │   ├── Http/Controllers/Api/
-│   │   │   ├── AuthController.php      # Register, login, logout, me
-│   │   │   └── ProjectController.php   # CRUD + approve/reject + stats
+│   │   │   ├── AuthController.php      
+│   │   │   └── ProjectController.php   
 │   │   ├── Http/Requests/
 │   │   │   ├── StoreProjectRequest.php
 │   │   │   └── RejectProjectRequest.php
@@ -37,7 +37,7 @@ project-approval-system/
 │   │   └── stored_procedures.sql        # sp_approve_project + sp_reject_project
 │   └── routes/api.php
 │
-└── frontend/         ← React + Vite + Tailwind
+└── frontend/         ← React  + Bootstrap
     └── src/
         ├── api/index.js                 # Axios client + all API functions
         ├── contexts/AuthContext.jsx     # Global auth state
@@ -57,7 +57,7 @@ project-approval-system/
 
 ---
 
-## ⚙️ Tech Stack
+##  Tech Stack
 
 | Layer     | Technology                          |
 |-----------|-------------------------------------|
@@ -119,15 +119,15 @@ php artisan migrate
 php artisan db:seed
 mysql -u root -p project_approval_db < database/stored_procedures.sql
 php artisan storage:link
-php artisan serve             # http://localhost:8000
-php artisan queue:work        # (separate terminal for email queue)
+php artisan serve             
+php artisan queue:work        
 ```
 
 ### Frontend
 ```bash
 cd frontend
 npm install
-npm run dev                   # http://localhost:3000
+npm start                 
 ```
 
 ---
