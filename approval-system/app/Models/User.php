@@ -29,7 +29,7 @@ class User extends Authenticatable
         'password'          => 'hashed',
     ];
 
-    // ─── Relationships ────────────────────────────────────────────────
+                                
 
     public function projects()
     {
@@ -46,8 +46,7 @@ class User extends Authenticatable
         return $this->hasMany(AuditLog::class);
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────
-
+    
     public function isAdmin(): bool
     {
         return $this->role === 'admin';

@@ -18,10 +18,7 @@ use Illuminate\Support\Facades\Storage;
 class ProjectController extends Controller
 {
     use AuthorizesRequests;
-    /**
-     * GET /api/projects
-     * List projects: admins see all, users see their own.
-     */
+    
     public function index(Request $request): JsonResponse
     {
         $user  = $request->user();
@@ -37,7 +34,7 @@ class ProjectController extends Controller
             $query->where('status', $request->status);
         }
 
-        // Filter by submitter (admin only)
+        // Filter by submitter 
         if ($user->isAdmin() && $request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
         }
@@ -70,36 +67,48 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function showAuditLogs(Request $request, Project $project): JsonResponse
+    public function showAuditLogs(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        // Users can only view their own projects
-        if ($user->isUser() && $project->user_id !== $user->id) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        $query = AuditLog::with(['user', 'project']);
+
+        if ($user->isUser()) {
+            $query->whereHas('project', fn($q) => $q->where('user_id', $user->id));
         }
 
-        $auditLogs = $project->auditLogs()->with('user')->latest()->get();
+        if ($request->filled('project_id')) {
+            $query->where('project_id', $request->project_id);
+        }
+
+        if ($request->filled('action') && in_array($request->action, ['submitted', 'approved', 'rejected'])) {
+            $query->where('action', $request->action);
+        }
+
+        $auditLogs = $query->latest('performed_at')->get();
 
         return response()->json([
             'success' => true,
             'data'    => $auditLogs->map(fn($log) => [
-                'id'         => $log->id,
-                'action'     => $log->action,
-                'message'    => $log->message,
-                'created_at' => $log->created_at->toIso8601String(),
-                'user'       => [
+                'id'           => $log->id,
+                'action'       => $log->action,
+                'note'         => $log->notes,
+                'performed_at' => $log->performed_at->toIso8601String(),
+                'ip_address'   => $log->ip_address,
+                'user'         => [
                     'id'   => $log->user->id,
                     'name' => $log->user->name,
                 ],
-            ]), 
+                'project'      => $log->project ? [
+                    'id'    => $log->project->id,
+                    'title' => $log->project->title,
+                    'submitter' => $log->project->user?->name,
+                ] : null,
+            ]),
         ]);
     }
 
-    /**
-     * POST /api/projects
-     * Submit a new project.
-     */
+    
     public function store(StoreProjectRequest $request): JsonResponse
     {
         $user      = $request->user();
@@ -140,9 +149,7 @@ class ProjectController extends Controller
         ], 201);
     }
 
-    /**
-     * GET /api/projects/{id}
-     */
+    
     public function show(Request $request, Project $project): JsonResponse
     {
         $user = $request->user();
@@ -160,10 +167,6 @@ class ProjectController extends Controller
         ]);
     }
 
-    /**
-     * PATCH /api/projects/{id}/approve
-     * Approve a project using the stored procedure.
-     */
     public function approve(Request $request, Project $project): JsonResponse
     {
         $this->authorize('approve', $project);
@@ -204,10 +207,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    /**
-     * PATCH /api/projects/{id}/reject
-     * Reject a project using stored procedure.
-     */
+    
     public function reject(RejectProjectRequest $request, Project $project): JsonResponse
     {
         $this->authorize('approve', $project);
@@ -246,10 +246,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    /**
-     * POST /api/projects/bulk-action
-     * Bulk approve or reject projects (admin only).
-     */
+    
     public function bulkAction(Request $request): JsonResponse
     {
         $this->authorize('bulkAction', Project::class);
@@ -294,10 +291,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    /**
-     * GET /api/projects/stats
-     * Dashboard statistics.
-     */
+    
     public function stats(Request $request): JsonResponse
     {
         $user  = $request->user();
@@ -325,10 +319,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    /**
-     * DELETE /api/projects/{id}
-     * Owner can delete their pending project.
-     */
+    
     public function destroy(Request $request, Project $project): JsonResponse
     {
         $user = $request->user();

@@ -12,9 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new user.
-     */
+    
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -27,7 +25,7 @@ class AuthController extends Controller
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role'     => 'user', // Default role; admins are created via seeder
+            'role'     => 'user', 
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -42,9 +40,7 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Login user and return token.
-     */
+    
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -60,7 +56,6 @@ class AuthController extends Controller
             ]);
         }
 
-        // Revoke old tokens to keep one session per login
         $user->tokens()->delete();
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -74,9 +69,7 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Logout user (revoke token).
-     */
+    
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
@@ -87,9 +80,7 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Get authenticated user profile.
-     */
+    
     public function me(Request $request): JsonResponse
     {
         return response()->json([
@@ -98,7 +89,17 @@ class AuthController extends Controller
         ]);
     }
 
-    // ─── Private helpers ──────────────────────────────────────────────
+    public function users(): JsonResponse
+    {
+        $users = User::orderBy('created_at', 'desc')->get()->map(function (User $user) {
+            return $this->formatUser($user);
+        });
+
+        return response()->json([
+            'success' => true,
+            'data'    => $users,
+        ]);
+    }
 
     private function formatUser(User $user): array
     {

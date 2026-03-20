@@ -10,12 +10,23 @@ import ProjectsList from './pages/ProjectsList'
 import SubmitProject from './pages/Submitproject'
 import AuditLogs from './pages/Auditlogs'
 import UserManagement from './pages/Usermanagement'
+import Profile from './pages/Profile'
 import Sidebar from './components/Sidebar'
+
+import { useLocation, useNavigate } from 'react-router-dom'
 
 function AppInner() {
   const { user, isAdmin, ready } = useAuth()
   const [authMode, setAuthMode] = useState('login')
-  const [page, setPage] = useState('dashboard')
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const page = location.pathname === '/' || location.pathname === '' ? 'dashboard' : location.pathname.replace(/\//g, '')
+
+  const setPage = (targetPage) => {
+    const route = targetPage === 'dashboard' ? '/' : `/${targetPage}`
+    navigate(route)
+  }
 
   if (!ready) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>
@@ -24,8 +35,9 @@ function AppInner() {
   if (!user) {
     return (
       <Routes>
+        <Route path="/login" element={<LoginPage onSwitch={() => setAuthMode('register')} />} />
         <Route path="/register" element={<RegisterPage onSwitch={() => setAuthMode('login')} />} />
-        <Route path="*" element={<LoginPage onSwitch={() => setAuthMode('register')} />} />
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     )
   }
@@ -37,17 +49,6 @@ function AppInner() {
     audit: 'Audit Logs',
     users: 'User Management',
     profile: 'Profile',
-  }
-
-  const renderPage = () => {
-    switch (page) {
-      case 'dashboard': return <Dashboard setPage={setPage} />
-      case 'projects': return <ProjectsList />
-      case 'submit': return <SubmitProject setPage={setPage} />
-      case 'audit': return isAdmin ? <AuditLogs /> : <Dashboard setPage={setPage} />
-      case 'users': return isAdmin ? <UserManagement /> : <Dashboard setPage={setPage} />
-      default: return <Dashboard setPage={setPage} />
-    }
   }
 
   return (
@@ -71,7 +72,16 @@ function AppInner() {
             </button>
           </div>
         </div>
-        {renderPage()}
+        <Routes>
+          <Route path="/" element={<Dashboard setPage={setPage} />} />
+          <Route path="/dashboard" element={<Dashboard setPage={setPage} />} />
+          <Route path="/projects" element={<ProjectsList />} />
+          <Route path="/submit" element={<SubmitProject setPage={setPage} />} />
+          <Route path="/audit" element={isAdmin ? <AuditLogs /> : <Dashboard setPage={setPage} />} />
+          <Route path="/users" element={isAdmin ? <UserManagement /> : <Navigate to="/dashboard" />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="*" element={<Navigate to="/dashboard" />} />
+        </Routes>
       </main>
     </div>
   )

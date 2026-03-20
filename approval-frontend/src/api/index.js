@@ -21,7 +21,9 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
-      window.location.href = '/login'
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }
@@ -35,6 +37,7 @@ export const authApi = {
   login:    (data)  => api.post('/auth/login', data),
   logout:   ()      => api.post('/auth/logout'),
   me:       ()      => api.get('/auth/me'),
+  users:    ()      => api.get('/users'),
 }
 
 // ─── Project endpoints ────────────────────────────────────────────────────────
@@ -49,4 +52,5 @@ export const projectsApi = {
   reject:     (id, data) => api.patch(`/projects/${id}/reject`, data),
   bulkAction: (data)     => api.post('/projects/bulk-action', data),
   delete:     (id)       => api.delete(`/projects/${id}`),
+  auditLogs:  (params)   => api.get('/projects/audit-logs', { params }),
 }

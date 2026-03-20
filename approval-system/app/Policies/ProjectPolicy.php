@@ -23,9 +23,7 @@ class ProjectPolicy
         return $user->isAdmin();
     }
 
-    /**
-     * Users can view their own projects; admins can view all.
-     */
+    
     public function view(User $user, Project $project): bool
     {
         return $user->isAdmin() || $project->user_id === $user->id;
@@ -39,9 +37,7 @@ class ProjectPolicy
         return true; // All authenticated users can submit
     }
 
-    /**
-     * Only the owning user can delete a pending project; admins can delete any.
-     */
+    
     public function delete(User $user, Project $project): bool
     {
         return $user->isAdmin() || $project->user_id === $user->id;

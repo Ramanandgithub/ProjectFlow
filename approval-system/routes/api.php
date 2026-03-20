@@ -42,6 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin-only project actions
     Route::middleware('admin')->group(function () {
+        Route::get('/users', [AuthController::class, 'users']);
         Route::patch('/projects/{project}/approve', [ProjectController::class, 'approve']);
         Route::patch('/projects/{project}/reject',  [ProjectController::class, 'reject']);
         Route::post('/projects/bulk-action',        [ProjectController::class, 'bulkAction']);

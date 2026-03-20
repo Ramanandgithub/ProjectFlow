@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { useAuth } from './AuthContext'
 import { projectsApi } from '../api'
 
 const ProjectContext = createContext(null)
 export const useProjects = () => useContext(ProjectContext)
 
 export function ProjectProvider({ children }) {
+  const { isAuth, ready } = useAuth()
   const [projects, setProjects] = useState([])
   const [stats, setStats] = useState({ total: 0, approved: 0, rejected: 0, pending: 0, submitted: 0 })
 
@@ -56,10 +58,17 @@ export function ProjectProvider({ children }) {
   }
 
   useEffect(() => {
-    fetchProjects()
-    fetchStats()
-  }, [])
+    if (!ready) return
 
+    if (isAuth) {
+      fetchProjects()
+      fetchStats()
+    } else {
+      
+      setProjects([])
+      setStats({ total: 0, approved: 0, rejected: 0, pending: 0, submitted: 0 })
+    }
+  }, [ready, isAuth])
 
   const addProject = async (data, user, config = {}) => {
     // allow both plain object and FormData

@@ -1,21 +1,51 @@
-import React, { useState } from 'react'
-import { useProjects } from '../context/ProjectContext'
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { projectsApi } from '../api'
 import { format } from 'date-fns'
 
 export default function AuditLogs() {
-  const { projects } = useProjects()
+  const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
+  const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  const allLogs = projects.flatMap(p =>
-    p.history.map(h => ({
-      ...h,
-      projectId: p.id,
-      projectTitle: p.title,
-      submitter: p.submitterName,
-    }))
-  ).sort((a, b) => new Date(b.at) - new Date(a.at))
+  useEffect(() => {
+    const fetchLogs = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const { data } = await projectsApi.auditLogs()
+        const apiLogs = Array.isArray(data.data) ? data.data : []
+        setLogs(apiLogs.map(log => ({
+          id: log.id,
+          action: log.action,
+          note: log.note || '',
+          by: log.user?.name || 'System',
+          at: log.performed_at || log.created_at || '',
+          projectId: log.project?.id || '',
+          projectTitle: log.project?.title || 'Unknown',
+          submitter: log.project?.submitter || 'Unknown',
+        })))
+      } catch (err) {
+        if (err.response?.status === 401) {
+          // If auth is invalid, go back to login and clear token storage
+          localStorage.removeItem('auth_token')
+          localStorage.removeItem('auth_user')
+          navigate('/login')
+          return
+        }
+        console.error('Failed to fetch audit logs', err)
+        setError('Unable to load audit logs. Please refresh.')
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const filtered = filter === 'all' ? allLogs : allLogs.filter(l => l.action === filter)
+    fetchLogs()
+  }, [navigate])
+
+  const filtered = filter === 'all' ? logs : logs.filter(l => l.action === filter)
 
   const actionStyles = {
     submitted: { icon: 'bi-send', color: 'var(--pf-accent)', bg: 'rgba(59,130,246,0.1)' },
@@ -51,7 +81,17 @@ export default function AuditLogs() {
           <span className="text-muted-pf fs-xs" style={{ marginLeft: 'auto' }}>{filtered.length} entries</span>
         </div>
 
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="pf-empty-state">
+            <i className="bi bi-arrow-repeat animate-spin" />
+            <p>Loading audit logs...</p>
+          </div>
+        ) : error ? (
+          <div className="pf-empty-state">
+            <i className="bi bi-exclamation-triangle" />
+            <p>{error}</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="pf-empty-state">
             <i className="bi bi-clock-history" />
             <p>No audit logs found</p>
